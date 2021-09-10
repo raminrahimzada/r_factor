@@ -1,11 +1,20 @@
-﻿using System;
+
+//#define BIGINT
+#define BIGINT_FALLBACK
+
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
 using System.Text;
+
+#if BIGINT
 using TNumber = System.Numerics.BigInteger;
-//using TNumber = System.UInt64;
+#else
+using TNumber = System.UInt64;
+#endif
+
 
 
 // ReSharper disable RedundantOverflowCheckingContext
@@ -15,9 +24,14 @@ using TNumber = System.Numerics.BigInteger;
 
 namespace RFactor
 {
-    internal static class R
+    public static class R
     {
+#if BIGINT
         private static readonly TNumber Ten = 10;
+#else
+        private const TNumber Ten = 10;
+#endif
+
         public const int MaxDigitLengthOfNumber = 20;
         private static readonly TNumber[] Digits;
         private static readonly Dictionary<int, TNumber> PowersOfTen = new();
@@ -32,15 +46,17 @@ namespace RFactor
                     PowersOfTen.Add(i, Ten * PowersOfTen[i - 1]);
                 }
             }
-            Digits = Enumerable.Range(0, (int)Ten).Select(x => (TNumber)x).ToArray();
+
+            var ten = (int) Ten;
+            Digits = Enumerable.Range(0, ten).Select(x => (TNumber)x).ToArray();
         }
 
-        public static TNumber[] FollowingBy(this TNumber a)
+        private static TNumber[] FollowingBy(this TNumber a)
         {
             return new[] {a};
         }
 
-        public static TNumber[] FollowingBy(this TNumber a, TNumber[] arr)
+        private static TNumber[] FollowingBy(this TNumber a, TNumber[] arr)
         {
             var result = new TNumber[arr.Length + 1];
             result[0] = a;
@@ -60,10 +76,8 @@ namespace RFactor
 
         public static TNumber Number(TNumber[] digitArr)
         {
-            //if (digitArr.Length == 0) throw null;
             if (digitArr.Length == 1) return digitArr[0];
             TNumber result = 0;
-            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var integer in digitArr)
             {
                 checked
@@ -74,7 +88,7 @@ namespace RFactor
             return result;
         }
 
-        public static TNumber Number(TNumber firstDigit, TNumber[] digitArr)
+        public static TNumber Number(TNumber firstDigit,TNumber[] digitArr)
         {
             if (digitArr.Length == 0) return firstDigit;
 
@@ -90,7 +104,7 @@ namespace RFactor
         }
 
        
-        public static IEnumerable<(TNumber[], TNumber[])> Find1(TNumber n)
+        private static IEnumerable<(TNumber[], TNumber[])> Find1(TNumber n)
         {
             var nTen = n % Ten;
             foreach (var i in Digits)
@@ -111,14 +125,39 @@ namespace RFactor
                 }
             }
         }
-        public static IEnumerable<(TNumber[], TNumber[])> Find(int step,TNumber n)
+
+        private static int GetStep(TNumber n)
         {
+            int counter = 0;
+            while (n>0)
+            {
+                ++counter;
+                n /= 10;
+            }
+
+            return counter;
+        }
+        public static IEnumerable<(TNumber[], TNumber[])> Find(TNumber n)
+        {
+            return Find(GetStep(n), n);
+        }
+        private static IEnumerable<(TNumber[], TNumber[])> Find(int step,TNumber n)
+        {
+#if DEBUG
+            var  counter= 0;
+#endif
             if (step == 1)
             {
                 foreach (var tuple in Find1(n))
                 {
+#if DEBUG
+                    ++counter; 
+#endif
                     yield return tuple;
                 }
+#if DEBUG
+                    Console.WriteLine($"step-{step} yield {counter} items");
+#endif
                 yield break;
             }
 
@@ -127,17 +166,20 @@ namespace RFactor
             var power = PowersOfTen[step];
             var nPower = n % power;
             var stepPrevious = Find(step - 1, n);
-            var counter = 0;
+
             foreach (var (left, right) in stepPrevious)
             {
-                counter++;
+                //Console.WriteLine(Number(left) + "*" + Number(right) + " = " + (Number(left) * Number(right)));
+#if DEBUG
+                ++counter;
+#endif
                 //Console.WriteLine(new string('\t',step) +$"step-{step} iteration-{counter}");
                 foreach (var leftFirstDigit in Digits)
                 {
                     foreach (var rightFirstDigit in Digits)
                     {
                         var ll = Number(leftFirstDigit, left);
-                        var rr = Number(rightFirstDigit, right);
+                        var rr = Number(rightFirstDigit,right);
                         ll %= power;
                         rr %= power;
                         //a[left] * b[right]
@@ -151,14 +193,19 @@ namespace RFactor
                     }
                 }
             }
+#if DEBUG
             Console.WriteLine($"step-{step} yield {counter} items");
+#endif
         }
 
-        public static bool? Check(ref TNumber ll, ref TNumber rr, ref TNumber power, ref TNumber n, ref TNumber nPower)
+        private static bool? Check(ref TNumber ll, ref TNumber rr, ref TNumber power, ref TNumber n, ref TNumber nPower)
         {
             var real = ll;
             checked
             {
+#if !BIGINT_FALLBACK
+                real *= rr;
+#else
                 try
                 {
                     real *= rr;
@@ -168,17 +215,20 @@ namespace RFactor
                     //use BigInteger here if came across to big numbers
                     return CheckBigInteger(ref ll, ref rr, ref power, ref n, ref nPower);
                 }
+#endif
             }
             if (real > n) return null;
             return real % power == nPower;
         }
-        public static bool? CheckBigInteger(ref TNumber ll, ref TNumber rr, ref TNumber power, ref TNumber n, ref TNumber nPower)
+#if BIGINT_FALLBACK
+        private static bool? CheckBigInteger(ref TNumber ll, ref TNumber rr, ref TNumber power, ref TNumber n, ref TNumber nPower)
         {
             //this causes performance penalty since BigInteger is less performant than System.IntXX
-            BigInteger real = ll;
+            System.Numerics.BigInteger real = ll;
             real *= rr;
             if (real > n) return null;
             return real % power == nPower;
         }
+#endif
     }
 }
