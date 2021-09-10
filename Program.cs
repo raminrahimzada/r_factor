@@ -1,26 +1,27 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Numerics;
 
 namespace RFactor
 {
     class Program
-    {
+    {         
         static void Main()
-        {
+        {            
             ulong N = 1;
-            N = N << 30;
-            //N--;
-            N++;
-
+            //N = N << 40;
+            //N++;
+            
+            N = int.MaxValue;
+            //N = 173 * 857;
             //N = 999999999L;
             //N = 99999999999L;
             Console.WriteLine($"started factoring {N} on {DateTime.Now.ToLongTimeString()}");
             var counter = 0;
-            var stepCount = N.ToString().Length;
+            //var stepCount = N.ToString().Length;
             var dt = DateTime.Now;
 
-            var steps = R.Find(stepCount, N).ToArray();
+            var steps = R.Find(N).ToArray();
             var total = (DateTime.Now - dt);
             foreach (var (bb, dd) in steps)
             {
@@ -35,11 +36,11 @@ namespace RFactor
 }
 
 /*
- * int.max->00:00:01.8709316
- * 2^20->00:00:00.0159823
- * 2^25->00:00:00.0319368
- * 2^30->00:00:00.3525702
- * 2^35->00:00:00.7658727
+ * int.max->00:00:00.2047912
+ * 2^20->00:00:00.0164829
+ * 2^25->00:00:00.0331482
+ * 2^30->00:00:00.3606766
+ * 2^35->00:00:00.7528593
  * 2^40->00:00:08.8903395
  * 2^45->00:02:13.2954906
  *
