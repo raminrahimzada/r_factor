@@ -1,5 +1,10 @@
-
+// Open this to use BigInteger for all numeric types
+// May decrease performance
 //#define BIGINT
+
+
+// Open this to use BigInteger when ulong is not enough
+// otherwise with throw overflow exception when n > 2^30 approx
 #define BIGINT_FALLBACK
 
 
